@@ -1,0 +1,37 @@
+pragma language_version >= 0.16.0;
+
+import CompactStandardLibrary:
+
+struct Candidate {
+    name: Opaque<"string">,
+    votes: Counter
+}
+export enum STATE {  notallowed, allowed };
+export ledger voters: Set<Bytes<16>>;
+export ledger instance: <Bytes<16> = 1;
+export ledger candidates: Vector<3, Candidate> = [
+    {name: "Tech Martins", votes },
+    { name: "Code Big Int", votes},
+    { name: "Lawal Musa", votes},
+]
+
+witness local_secret_key(): Bytes<32>;
+
+export circuit vote(_age: Uint<32>, _country: Opaque<"string">, _candidate: <Opaque<"string">): [] {
+    assert(_age >= 18, "You are too young to vote")
+    assert(_country == "nigeria", "Non - Nigerian Citizen are not allowed to vote")
+    const person = public_key(local_secret_key(), instance)
+    assert(!voters.member(person), "You can't vote twice!")
+
+    for (const i in candidates)
+        if (i.name == _candidate) {
+            candidates.votes.increment(1);
+        } else {
+            return;
+        };
+    voters.insert(person)   
+}
+
+export circuit public_key(sk: Bytes<32>, _instance: Bytes<16>): Bytes<32> {
+    return persistentHash<Vector<3, Bytes<32>>>([pad(32, "votera:pk:"), _instance, sk]);
+}

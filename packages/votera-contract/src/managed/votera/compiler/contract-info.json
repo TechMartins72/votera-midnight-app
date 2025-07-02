@@ -1,0 +1,41 @@
+{
+  "circuits": [
+    {
+      "name": "vote",
+      "pure": false,
+      "arguments": [
+        {
+          "name": "_age",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        },
+        {
+          "name": "_country",
+          "type": {
+            "type-name": "Bytes",
+            "length": 16
+          }
+        },
+        {
+          "name": "_candidate",
+          "type": {
+            "type-name": "Enum",
+            "name": "candidate",
+            "elements": [
+              "Joseph",
+              "Elliot",
+              "Samir"
+            ]
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.cjs",
+  "sourceRoot": "../../../../",
+  "sources": ["src/votera.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAWA;;;;;;;;MASA,AAAA,IAaC;;;;cAbmB,MAAc;cAAE,UAAmB;cAAE,YAAqB;;;;;;;;;;;;;;;;;;;;;;;;;;;;yCAA1D,MAAc,+BAAE,UAAmB,+BAAE,YAAqB;;;;;;;;;uCAA1D,MAAc;uCAAE,UAAmB;uCAAE,YAAqB;;;OAa7E;;;GAjBA;EALD;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IALA;;;;;;;;;;uDAAqC;IACrC;;;;;;;;;uDAAgC;IAChC;;;;;;;;;;uDAA6C;IAC7C;;;;;;;;;uDAAgC;UAG5B,KAAQ;IAAR;;;;;;;;;;2EAAA,KAAQ;;;;sDAAA;IACR;;;;;;;;;;;;;;;;sDAAK;IACL;;;;;;;;;;;;;;;;sDAAK;IACL;;;;;;;;;;;;;;;;sDAAK;;;;;;;GACR;EAID,AAAA,QAaC,4BAbmB,MAAc,EAAE,UAAmB,EAAE,YAAqB;QAClE,KAAM;8DAAQ;;;;;;;;;;;iHAAM;sDAApB;;;;;;;;;;;2JAAA,KAAM;;;;yGAAA;;4BACP,MAAI;2CACJ,UAAQ;;;gCAGX;;;;;;;;;;;qIAAsB,YAAU;;;;mFAA3B;;YACL,KAAK;MAAL;;;;;;;;;;+EAAsB,YAAU;;;6EAAhC,KAAK;;;;wDAAA;YAKT,KAAM,2BAAQ;;;;;;;;;;;+FAAM;MAApB;;;;;;;;;;2GAAA,KAAM;;;;;wDAAA;;;;;GACT;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IA3BD;;;;uCAAA;;;;;;;;;;;;;;;;0FAAqC;;;;;uCAArC;;;;;;;;;;;;0FAAqC;;;;;;;;;;;;uCAArC;;;;;;;;;;;;;;;0FAAqC;;;;;;;;KAAA;IACrC;qCAAA;;;;;;;;;;;wFAAgC;KAAA;IAChC;;;;uCAAA;;;;;;;;;;;;;;;;0FAA6C;;;;;uCAA7C;;;;;;;;;;;;0FAA6C;;;;;;;;;;;;uCAA7C;;;;;;;;;;;;;;;0FAA6C;;;;;;;;;;;;0EAA7C,KAA6C;;;;;;;2CAAT;;;;;;;;;;;oHAApC,KAA6C;;;8FAAF;;;;KAAE;IAC7C;qCAAA;;;;;;;;;;;wFAAgC;KAAA;;;;;;;;;;;;;;"
+}

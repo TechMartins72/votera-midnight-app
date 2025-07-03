@@ -1,6 +1,7 @@
 import type * as __compactRuntime from '@midnight-ntwrk/compact-runtime';
 
 export type Witnesses<T> = {
+  local_secret_key(context: __compactRuntime.WitnessContext<Ledger, T>): [T, Uint8Array];
 }
 
 export type ImpureCircuits<T> = {
@@ -11,6 +12,7 @@ export type ImpureCircuits<T> = {
 }
 
 export type PureCircuits = {
+  public_key(sk_0: Uint8Array, _instance_0: Uint8Array): Uint8Array;
 }
 
 export type Circuits<T> = {
@@ -18,6 +20,9 @@ export type Circuits<T> = {
        _age_0: bigint,
        _country_0: Uint8Array,
        _candidate_0: number): __compactRuntime.CircuitResults<T, []>;
+  public_key(context: __compactRuntime.CircuitContext<T>,
+             sk_0: Uint8Array,
+             _instance_0: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;
 }
 
 export type Ledger = {

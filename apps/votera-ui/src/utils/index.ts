@@ -14,3 +14,4 @@ export const votersData: voters[] = [
     count: 0,
   },
 ];
+

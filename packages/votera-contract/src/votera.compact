@@ -2,7 +2,7 @@ pragma language_version >= 0.16.0;
 
 import CompactStandardLibrary;
 
-enum candidate {Joseph, Elliot, Samir}
+enum candidate {Joseph, Elliot, Samir};
 
 export ledger voters: Set<Bytes<32>>;
 export ledger instance: Counter;
@@ -18,10 +18,9 @@ constructor() {
 
 witness local_secret_key(): Bytes<32>;
 
-export circuit vote(_age: Uint<32>, _country: Bytes<16>, _candidate: candidate): [] {
+export circuit vote(_candidate: candidate): [] {
     assert(!voters.member(person), "You can't vote twice!");
-    assert(_age >= 18, "You are too young to vote");
-    assert(_country == pad(16 ,"nigeria"), "Non - Nigerian Citizens are not allowed to vote");
+    const selected = candidate[_candidate]
     person = disclose(public_key(local_secret_key(), instance as Field as Bytes<32>));
 
     if (votes.member(disclose(_candidate))) {

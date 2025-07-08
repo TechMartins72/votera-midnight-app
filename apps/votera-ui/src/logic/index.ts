@@ -1,3 +1,23 @@
+import { v4 as uuidv4 } from "uuid";
+import {
+  concatMap,
+  filter,
+  firstValueFrom,
+  interval,
+  map,
+  of,
+  take,
+  tap,
+  throwError,
+  timeout,
+  catchError,
+} from "rxjs";
+import { pipe as fnPipe } from "fp-ts/function";
+import {
+  type DAppConnectorAPI,
+  type DAppConnectorWalletAPI,
+  type ServiceUriConfig,
+} from "@midnight-ntwrk/dapp-connector-api";
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
 import { FetchZkConfigProvider } from "@midnight-ntwrk/midnight-js-fetch-zk-config-provider";
 import { httpClientProofProvider } from "@midnight-ntwrk/midnight-js-http-client-proof-provider";
@@ -13,45 +33,31 @@ import {
   type TransactionId,
 } from "@midnight-ntwrk/ledger";
 import { Transaction as ZswapTransaction } from "@midnight-ntwrk/zswap";
+import semver from "semver";
 import {
   getLedgerNetworkId,
   getZswapNetworkId,
 } from "@midnight-ntwrk/midnight-js-network-id";
 import {
-  type DeployedVoteraContract,
-  type VoteraProviders,
+  deploy,
+  VoteraPrivateStateId,
+  type VoteraCircuitKeys,
 } from "@repo/votera-api";
+import { type WalletAndProvider } from "./common-types";
+import { createVoteraPrivateState } from "@repo/votera-contract";
 
-import {
-  type DAppConnectorAPI,
-  type DAppConnectorWalletAPI,
-  type ServiceUriConfig,
-} from "@midnight-ntwrk/dapp-connector-api";
-import {
-  firstValueFrom,
-  of,
-  take,
-  timeout,
-  concatMap,
-  throwError,
-  catchError,
-  interval,
-  map,
-  filter,
-} from "rxjs";
-import { pipe as fnPipe } from "fp-ts/function";
-import semver from "semver";
-
-const connectToWallet = (): Promise<{
+const connectWallet = async (): Promise<{
   wallet: DAppConnectorWalletAPI;
   uris: ServiceUriConfig;
 }> => {
   const COMPATIBLE_CONNECTOR_API_VERSION = "1.x";
-
   return firstValueFrom(
     fnPipe(
       interval(100),
-      map(() => window.midnight?.Lace),
+      map(() => window.midnight?.mnLace),
+      tap((connectorAPI) => {
+        console.info(connectorAPI, "Check for wallet connector API");
+      }),
       filter(
         (connectorAPI): connectorAPI is DAppConnectorAPI => !!connectorAPI
       ),
@@ -75,6 +81,12 @@ const connectToWallet = (): Promise<{
               );
             })
       ),
+      tap((connectorAPI) => {
+        console.info(
+          connectorAPI,
+          "Compatible wallet connector API found. Connecting."
+        );
+      }),
       take(1),
       timeout({
         first: 1_000,
@@ -123,56 +135,81 @@ const connectToWallet = (): Promise<{
         console.info(
           "Connected to wallet connector API and retrieved service configuration"
         );
+
         return { wallet: walletConnectorAPI, uris };
       })
     )
   );
 };
 
-export const initializeProviders = async (): Promise<VoteraProviders> => {
-  const { wallet, uris } = await connectToWallet();
-  const walletState = await wallet.state();
-
-  return {
-    privateStateProvider: levelPrivateStateProvider({
-      privateStateStoreName: "bboard-private-state",
-    }),
-    zkConfigProvider: new FetchZkConfigProvider(
-      window.location.origin,
-      fetch.bind(window)
-    ),
-    proofProvider: httpClientProofProvider(uris.proverServerUri),
-    publicDataProvider: indexerPublicDataProvider(
-      uris.indexerUri,
-      uris.indexerWsUri
-    ),
-    walletProvider: {
-      coinPublicKey: walletState.coinPublicKey,
-      balanceTx(
-        tx: UnbalancedTransaction,
-        newCoins: CoinInfo[]
-      ): Promise<BalancedTransaction> {
-        return wallet
-          .balanceAndProveTransaction(
-            ZswapTransaction.deserialize(
-              tx.serialize(getLedgerNetworkId()),
-              getZswapNetworkId()
-            ),
-            newCoins
-          )
-          .then((zswapTx) =>
-            Transaction.deserialize(
-              zswapTx.serialize(getZswapNetworkId()),
-              getLedgerNetworkId()
+export const initialWalletAndProviders =
+  async (): Promise<WalletAndProvider> => {
+    const { wallet, uris } = await connectWallet();
+    const walletState = await wallet.state();
+    const providers = {
+      privateStateProvider: levelPrivateStateProvider({
+        privateStateStoreName: "bboard-private-state",
+      }),
+      zkConfigProvider: new FetchZkConfigProvider<VoteraCircuitKeys>(
+        window.location.origin,
+        fetch.bind(window)
+      ),
+      proofProvider: httpClientProofProvider(uris.proverServerUri),
+      publicDataProvider: indexerPublicDataProvider(
+        uris.indexerUri,
+        uris.indexerWsUri
+      ),
+      walletProvider: {
+        coinPublicKey: walletState.coinPublicKey,
+        encryptionPublicKey: walletState.encryptionPublicKey,
+        balanceTx(
+          tx: UnbalancedTransaction,
+          newCoins: CoinInfo[]
+        ): Promise<BalancedTransaction> {
+          return wallet
+            .balanceAndProveTransaction(
+              ZswapTransaction.deserialize(
+                tx.serialize(getLedgerNetworkId()),
+                getZswapNetworkId()
+              ),
+              newCoins
             )
-          )
-          .then((transaction) => createBalancedTx(transaction));
+            .then((zswapTx) =>
+              Transaction.deserialize(
+                zswapTx.serialize(getZswapNetworkId()),
+                getLedgerNetworkId()
+              )
+            )
+            .then(createBalancedTx)
+            .finally(() => {
+              console.log("balanceTxDone");
+            });
+        },
       },
-    },
-    midnightProvider: {
-      submitTx(tx: BalancedTransaction): Promise<TransactionId> {
-        return wallet.submitTransaction(tx);
+      midnightProvider: {
+        submitTx(tx: BalancedTransaction): Promise<TransactionId> {
+          return wallet.submitTransaction(tx);
+        },
       },
-    },
+    };
+
+    // console.log({ wallet, uris, providers });
+    return { wallet, uris, providers };
   };
+
+export const deployVoteraContract = async () => {
+  const { providers } = await initialWalletAndProviders();
+  const id = uuidv4();
+  const uint8Array = new Uint8Array(Buffer.from(id, "utf8"));
+  const secretKey = createVoteraPrivateState(uint8Array);
+  console.log(secretKey);
+  await providers.privateStateProvider.set(VoteraPrivateStateId, secretKey);
+  const privateState =
+    await providers.privateStateProvider.get(VoteraPrivateStateId);
+  if (privateState != null) {
+    const deployedContract = await deploy(providers, privateState);
+    console.log(deployedContract?.deployTxData.public.contractAddress);
+  } else {
+    console.log("privateState not found");
+  }
 };

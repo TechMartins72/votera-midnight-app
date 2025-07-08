@@ -1,3 +1,7 @@
+# SEED
+
+908aa64fd8db5727205f652fc019fef890498bdf81d169db1f10625e41b2c710
+
 # Turborepo starter
 
 This Turborepo starter is maintained by the Turborepo core team.

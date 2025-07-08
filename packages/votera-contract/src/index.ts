@@ -1,2 +1,2 @@
-export * from "./managed/votera/contract/index.cjs";
-export * from "./witnesses";
+export * as Votera from "./managed/votera/contract/index.cjs";
+export * from "./witnesses.js";

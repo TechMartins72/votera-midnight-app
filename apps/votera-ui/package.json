@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "tsc && vite build --mode testnet && cp -r ../../packages/votera-contract/dist/managed/votera/keys ./dist/keys && cp -r ../../packages/votera-contract/dist/managed/votera/zkir ./dist/zkir",
+    "build": "tsc && vite build --mode testnet && cp -r ../../packages/contract/dist/managed/votera/keys ./dist/keys && cp -r ../../packages/contract/dist/managed/votera/zkir ./dist/zkir",
     "dev": "vite",
     "start": "http-server --port 0 ./dist",
     "lint": "eslint .",

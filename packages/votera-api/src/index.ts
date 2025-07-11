@@ -1,128 +1,194 @@
 import {
-  convert_bigint_to_Uint8Array,
-  type ContractAddress,
-} from "@midnight-ntwrk/compact-runtime";
-import { combineLatest, map, from, type Observable } from "rxjs";
-import {
-  type VoteraPrivateState,
   createVoteraPrivateState,
-  Votera,
+  VoteraPrivateState,
   witnesses,
 } from "@repo/votera-contract";
+import { Contract, ledger, Ledger, pureCircuits } from "@repo/votera-contract";
+import {
+  DeployedVoteraContract,
+  VoteraContract,
+  VoteraContractProvider,
+  VoteraPrivateStateKey,
+} from "./common-types.js";
+import {
+  ContractAddress,
+  convert_bigint_to_Uint8Array,
+} from "@midnight-ntwrk/compact-runtime";
+import { combineLatest, from, map, Observable } from "rxjs";
 import {
   deployContract,
   findDeployedContract,
 } from "@midnight-ntwrk/midnight-js-contracts";
-import { assertIsContractAddress } from "@midnight-ntwrk/midnight-js-utils";
-import {
-  DeployedVoteraContract,
-  DerivedLedgerState,
-  VoteraContract,
-  VoteraPrivateStateId,
-  VoteraProviders,
-} from "./common-types.js";
+import { randomNonceBytes } from "./utils.js";
 
-export const VoteraContractInstance: VoteraContract = new Votera.Contract(
-  witnesses
-);
+const voteraContractInstance: VoteraContract = new Contract(witnesses);
 
-export const deploy = async (
-  providers: VoteraProviders
-): Promise<DeployedVoteraContract | undefined> => {
-  let deployedVoteraContract;
-  try {
-    deployedVoteraContract = await deployContract(providers, {
-      contract: VoteraContractInstance,
-      privateStateId: VoteraPrivateStateId,
-      initialPrivateState: await getPrivateState(providers),
-    });
-  } catch (error) {
-    console.log(error);
+export interface DeployedVoteraAPI {
+  readonly deployedContractAddress: ContractAddress;
+}
+
+export class VoteraAPI implements DeployedVoteraAPI {
+  public readonly deployedContractAddress: ContractAddress;
+  readonly state$: Observable<Ledger>;
+
+  private constructor(
+    public readonly deployedContract: DeployedVoteraContract,
+    private providers: VoteraContractProvider
+  ) {
+    this.deployedContractAddress =
+      deployedContract.deployTxData.public.contractAddress;
+    this.state$ = combineLatest(
+      [
+        // Combine public (ledger) state with...
+        providers.publicDataProvider
+          .contractStateObservable(this.deployedContractAddress, {
+            type: "all",
+          })
+          .pipe(map((contractState) => ledger(contractState.data))),
+        from(
+          providers.privateStateProvider.get(
+            VoteraPrivateStateKey
+          ) as Promise<VoteraPrivateState>
+        ),
+      ],
+      // ...and combine them to produce the required derived state.
+      (ledgerState, privateState) => {
+        const hashedPublicKey = pureCircuits.public_key(
+          privateState.secretKey,
+          convert_bigint_to_Uint8Array(32, ledgerState.instance)
+        );
+
+        return {
+          instance: ledgerState.instance,
+          person: hashedPublicKey,
+          voters: ledgerState.voters,
+          candidates: ledgerState.candidates,
+        };
+      }
+    );
   }
-  return deployedVoteraContract;
-};
 
-export const joinContract = async (
-  providers: VoteraProviders,
-  contractAddress: ContractAddress
-): Promise<DeployedVoteraContract | undefined> => {
-  let foundContract;
-  try {
-    assertIsContractAddress(contractAddress);
-    foundContract = await findDeployedContract(providers, {
-      contractAddress,
-      contract: VoteraContractInstance,
-      privateStateId: VoteraPrivateStateId,
-      initialPrivateState: await getPrivateState(providers),
-    });
-  } catch (error) {
-    console.log(error);
+  static async deployVoteraContract(
+    providers: VoteraContractProvider
+  ): Promise<VoteraAPI> {
+    /**
+     * Should deploy a new contract to the blockchain
+     * Return the newly deployed contract
+     * Log the resulting data about of the newly deployed contract using (logger)
+     */
+    const deployVoteraContract = await deployContract<VoteraContract>(
+      providers,
+      {
+        contract: voteraContractInstance,
+        initialPrivateState: await VoteraAPI.getPrivateState(providers),
+        privateStateId: VoteraPrivateStateKey,
+        args: ["joseph", "elliot", "samir"],
+      }
+    );
+    return new VoteraAPI(deployVoteraContract, providers);
   }
 
-  return foundContract;
-};
+  static async join(
+    providers: VoteraContractProvider,
+    contractAddress: ContractAddress
+  ): Promise<VoteraAPI> {
+    const deployedVoteraContract = await findDeployedContract<VoteraContract>(
+      providers,
+      {
+        contractAddress,
+        contract: voteraContractInstance,
+        privateStateId: VoteraPrivateStateKey,
+        initialPrivateState: await VoteraAPI.getPrivateState(providers),
+      }
+    );
+    return new VoteraAPI(deployedVoteraContract, providers);
+  }
 
-export const getLedgerStateObs = (
-  providers: VoteraProviders,
-  contractAddress: ContractAddress
-): Observable<Votera.Ledger> => {
-  assertIsContractAddress(contractAddress);
+  private static async getPrivateState(
+    providers: VoteraContractProvider
+  ): Promise<VoteraPrivateState> {
+    const existingPrivateState = await providers.privateStateProvider.get(
+      VoteraPrivateStateKey
+    );
+    return (
+      existingPrivateState ?? createVoteraPrivateState(randomNonceBytes(32))
+    );
+  }
 
-  const state = combineLatest([
+  static getVoteraLedgerState = (
+    providers: VoteraContractProvider,
+    contractAddress: ContractAddress
+  ): Promise<Ledger | null> =>
     providers.publicDataProvider
-      .contractStateObservable(contractAddress, { type: "latest" })
-      .pipe(
-        map((contractState) => {
-          return Votera.ledger(contractState.data); // Added return statement
-        })
-      ),
-    from(
-      providers.privateStateProvider.get(
-        VoteraPrivateStateId
-      ) as Promise<VoteraPrivateState>
-    ),
-  ]).pipe(
-    map(([publicState, privateState]) => {
-      const hashedSecretKey = Votera.pureCircuits.public_key(
-        privateState.secretKey,
-        convert_bigint_to_Uint8Array(32, publicState.instance)
+      .queryContractState(contractAddress)
+      .then((contractState) =>
+        contractState != null ? ledger(contractState.data) : null
       );
-      return {
-        voters: publicState.voters,
-        instance: publicState.instance,
-        votes: publicState.votes,
-        person: hashedSecretKey,
-      };
-    })
-  );
-  return state;
-};
 
-export const randomBytes = (length: number): Uint8Array => {
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  return bytes;
-};
+  static getVoters = async (
+    providers: VoteraContractProvider,
+    contractAddress: ContractAddress
+  ) => {
+    const ledger = await this.getVoteraLedgerState(providers, contractAddress);
+    if (ledger != null) {
+      console.log(ledger?.voters);
+      return ledger?.voters;
+    } else {
+      console.log(
+        `Contract Address ${contractAddress}, doesn't seem to contain any voter `
+      );
+    }
+  };
 
-const getPrivateState = async (
-  providers: VoteraProviders
-): Promise<VoteraPrivateState> => {
-  const existingPrivateState =
-    await providers.privateStateProvider.get(VoteraPrivateStateId);
-  return existingPrivateState ?? createVoteraPrivateState(randomBytes(32));
-};
+  static getVotes = async (
+    providers: VoteraContractProvider,
+    contractAddress: ContractAddress
+  ) => {
+    try {
+      const ledger = await this.getVoteraLedgerState(
+        providers,
+        contractAddress
+      );
+      if (ledger != null) {
+        console.log(ledger?.candidates);
+        return ledger?.candidates;
+      } else {
+        console.log(
+          `Contract Address ${contractAddress}, doesn't seem to contain any voter `
+        );
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-export const vote = async (
-  deployedContract: DeployedVoteraContract,
-  candidate: number
-) => {
-  const txData = await deployedContract.callTx.vote(candidate);
+  async vote(candidate: string) {
+    try {
+      const txData = await this.deployedContract.callTx.vote(candidate);
+      console.log(`
+        transaction status: ${txData.public.status} n/
+        transaction hash: ${txData.public.txHash} n/
+        block hash: ${txData.public.blockHash} n/
+        `);
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
-  console.log(`
-    ${txData.public.txHash},
-    ${txData.public.blockHeight}
-    ${txData.public.blockHash}
-    `);
-};
+  static getStateraLedgerState = async (
+    providers: VoteraContractProvider,
+    contractAddress: ContractAddress
+  ): Promise<Ledger | null> => {
+    const state = await providers.publicDataProvider
+      .queryContractState(contractAddress)
+      .then((contractState) =>
+        contractState != null ? ledger(contractState.data) : null
+      );
+    console.log({ state });
+
+    return state;
+  };
+}
 
 export * from "./common-types.js";
+export * from "./utils.js";

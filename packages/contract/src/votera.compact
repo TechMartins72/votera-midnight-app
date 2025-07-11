@@ -1,0 +1,29 @@
+pragma language_version >= 0.16.0;
+
+import CompactStandardLibrary;
+
+export ledger voters: Set<Bytes<32>>;
+export ledger instance: Counter;
+export ledger candidates: Map<Opaque<"string">, Counter>;
+export ledger person: Bytes<32>;
+
+
+constructor(name1: Opaque<"string">, name2: Opaque<"string">, name3: Opaque<"string">) {
+    candidates.insert(disclose(name1), default<Counter>);
+    candidates.insert(disclose(name2), default<Counter>);
+    candidates.insert(disclose(name3), default<Counter>);
+    instance.increment(2);
+}
+
+witness local_secret_key(): Bytes<32>;
+
+export circuit vote(candidate: Opaque<"string">): [] {
+    person = disclose(public_key(local_secret_key(), instance as Field as Bytes<32>));
+    assert(!voters.member(person), "You can't vote twice!");
+    candidates.lookup(disclose(candidate)).increment(1);
+    voters.insert(person);
+}
+
+export circuit public_key(sk: Bytes<32>, _instance: Bytes<32>): Bytes<32> {
+    return persistentHash<Vector<3, Bytes<32>>>([pad(32, "votera:pk:"), _instance, sk]);
+}

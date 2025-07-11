@@ -5,15 +5,10 @@
       "pure": false,
       "arguments": [
         {
-          "name": "_candidate",
+          "name": "candidate",
           "type": {
-            "type-name": "Enum",
-            "name": "candidate",
-            "elements": [
-              "Joseph",
-              "Elliot",
-              "Samir"
-            ]
+            "type-name": "Opaque",
+            "tsType": "string"
           }
         }
       ],

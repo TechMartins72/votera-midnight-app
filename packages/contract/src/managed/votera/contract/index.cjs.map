@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.cjs",
+  "sourceRoot": "../../../../",
+  "sources": ["src/votera.compact", "compiler/standard-library.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAUA;;;;;;;;;;MASA,AAAA,IAKC;;;;cALmB,WAA2B;;;;;;;;;;yCAA3B,WAA2B;;;;;;;kEAA3B,WAA2B;;;OAK9C;MAED,AAAA,UAEC;;;;cAFyB,IAAa;cAAE,WAAoB;;;;;;;;;;;;;;;;;;;;;;yCAAnC,IAAa,+BAAE,WAAoB;;;;;;;;;6CAAnC,IAAa;6CAAE,WAAoB;;;OAE5D;;;GAbA;EALD;;;;UAAY,OAAuB;UAAE,OAAuB;UAAE,OAAuB;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IANrF;;;;;;;;;;uDAAqC;IACrC;;;;;;;;;uDAAgC;IAChC;;;;;;;;;;uDAAyD;IACzD;;;;;;;;;uDAAgC;IAI5B;;;;;;;;;;yGAA2B,OAAK;;;;;;sDAAtB;IACV;;;;;;;;;;yGAA2B,OAAK;;;;;;sDAAtB;IACV;;;;;;;;;;yGAA2B,OAAK;;;;;;sDAAtB;UACV,KAAQ;IAAR;;;;;;;;;;2EAAA,KAAQ;;;;sDAAA;;;;;;;GACX;EC4BD,AAAA,8CAAiC;oEAAA;;;ED1BjC,AAAA,oBAAsC;;0DAAtC,gBAAsC;;;;;;;;;;;;;GAAA;EAEtC,AAAA,QAKC,4BALmB,WAA2B;UAC3C,KAAM;;;;;4GAA2C;;;;;;;;;;;+JAAQ;IAAzD;;;;;;;yGAAA,KAAM;;uDAAA;QACE,KAAM;8DAAQ;;;;;;;;;;;iHAAM;sDAApB;;;;;;;;;;;2JAAA,KAAM;;;;yGAAA;;UACd,KAAU;IAAV;;;;;;;;;;6EAA2B,WAAS;;;2EAApC,KAAU;;;;sDAAA;UACV,KAAM,2BAAQ;;;;;;;;;;;6FAAM;IAApB;;;;;;;;;;yGAAA,KAAM;;;;;sDAAA;;GACT;EAED,AAAA,cAEC,4BAFyB,IAAa,EAAE,WAAoB;;;;oCACW,WAAS;oCAAE,IAAE;GACpF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAxBD;;;;uCAAA;;;;;;;;;;;;;;;;0FAAqC;;;;;uCAArC;;;;;;;;;;;;0FAAqC;;;;;;;;;;;;uCAArC;;;;;;;;;;;;;;;0FAAqC;;;;;;;;KAAA;IACrC;qCAAA;;;;;;;;;;;wFAAgC;KAAA;IAChC;;;;uCAAA;;;;;;;;;;;;;;;;0FAAyD;;;;;uCAAzD;;;;;;;;;;;;0FAAyD;;;;;;uCAAzD;;;;;;;;;;;;;;;0FAAyD;;;;;;0EAAzD,KAAyD;;;;;;;2CAAT;;;;;;;;;;;oHAAhD,KAAyD;;;8FAAF;;;;KAAE;IACzD;qCAAA;;;;;;;;;;;wFAAgC;KAAA;;;;;;;;;;;;;;;;;;"
+}

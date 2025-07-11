@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
 import {
   concatMap,
   filter,
@@ -38,13 +37,13 @@ import {
   getLedgerNetworkId,
   getZswapNetworkId,
 } from "@midnight-ntwrk/midnight-js-network-id";
-import {
-  deploy,
-  VoteraPrivateStateId,
-  type VoteraCircuitKeys,
-} from "@repo/votera-api";
+
 import { type WalletAndProvider } from "./common-types";
-import { createVoteraPrivateState } from "@repo/votera-contract";
+import {
+  VoteraPrivateStateKey,
+  type VoteraCircuitKeys,
+} from "../../../../packages/votera-api/dist/common-types";
+import { VoteraAPI } from "@repo/votera-api";
 
 const connectWallet = async (): Promise<{
   wallet: DAppConnectorWalletAPI;
@@ -135,7 +134,7 @@ const connectWallet = async (): Promise<{
         console.info(
           "Connected to wallet connector API and retrieved service configuration"
         );
-
+        console.log("wallet connect");
         return { wallet: walletConnectorAPI, uris };
       })
     )
@@ -148,7 +147,7 @@ export const initialWalletAndProviders =
     const walletState = await wallet.state();
     const providers = {
       privateStateProvider: levelPrivateStateProvider({
-        privateStateStoreName: "bboard-private-state",
+        privateStateStoreName: VoteraPrivateStateKey,
       }),
       zkConfigProvider: new FetchZkConfigProvider<VoteraCircuitKeys>(
         window.location.origin,
@@ -193,23 +192,16 @@ export const initialWalletAndProviders =
       },
     };
 
-    // console.log({ wallet, uris, providers });
+    console.log("providers initiated");
     return { wallet, uris, providers };
   };
 
-export const deployVoteraContract = async () => {
+export const deployOrJoinContract = async () => {
   const { providers } = await initialWalletAndProviders();
-  const id = uuidv4();
-  const uint8Array = new Uint8Array(Buffer.from(id, "utf8"));
-  const secretKey = createVoteraPrivateState(uint8Array);
-  console.log(secretKey);
-  await providers.privateStateProvider.set(VoteraPrivateStateId, secretKey);
-  const privateState =
-    await providers.privateStateProvider.get(VoteraPrivateStateId);
-  if (privateState != null) {
-    const deployedContract = await deploy(providers, privateState);
-    console.log(deployedContract?.deployTxData.public.contractAddress);
-  } else {
-    console.log("privateState not found");
-  }
+  const deployedContract = await VoteraAPI.join(
+    providers,
+    "0200296d8e167dccd9c6365207bd4f65043bf0a92a80f4b5198ec974481a5ab139d8"
+  );
+  console.log({ deployedContract });
+  console.log("contract deployment block");
 };

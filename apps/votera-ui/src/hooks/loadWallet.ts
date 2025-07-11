@@ -1,10 +1,10 @@
-// Create a new file: walletConnection.js
 export const loadWalletConnection = async () => {
   try {
-    // Dynamic import only loads when actually called
-    const { deployVoteraContract } = await import("../logic");
-    return deployVoteraContract;
+    console.log("Load wallet connection block");
+    const { deployOrJoinContract } = await import("../logic");
+    return deployOrJoinContract;
   } catch (error) {
+    console.log("Load wallet connection error block");
     console.error("Failed to load wallet connection:", error);
     throw new Error("Wallet connection not available in this environment");
   }

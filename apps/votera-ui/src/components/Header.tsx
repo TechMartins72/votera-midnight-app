@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 
 const Header = () => {
   const handleConnectWallet = async () => {
-    try { 
+    try {
       const connectWallet = await loadWalletConnection();
       await connectWallet();
     } catch (error) {

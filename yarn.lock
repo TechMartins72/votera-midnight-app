@@ -1616,9 +1616,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@repo/votera-contract@npm:*, @repo/votera-contract@workspace:packages/votera-contract":
+"@repo/votera-contract@npm:*, @repo/votera-contract@workspace:packages/contract":
   version: 0.0.0-use.local
-  resolution: "@repo/votera-contract@workspace:packages/votera-contract"
+  resolution: "@repo/votera-contract@workspace:packages/contract"
   dependencies:
     "@midnight-ntwrk/compact": "npm:*"
     eslint: "npm:^8.52.0"

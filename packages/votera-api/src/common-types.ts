@@ -27,7 +27,8 @@ export type VoteraContractProvider = MidnightProviders<
   VoteraPrivateState
 >;
 
-
 export type DeployedVoteraContract =
   | DeployedContract<VoteraContract>
   | FoundContract<VoteraContract>;
+
+export type derivedLedgerState = {};

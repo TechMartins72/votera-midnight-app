@@ -164,30 +164,11 @@ export class VoteraAPI implements DeployedVoteraAPI {
 
   async vote(candidate: string) {
     try {
-      const txData = await this.deployedContract.callTx.vote(candidate);
-      console.log(`
-        transaction status: ${txData.public.status} n/
-        transaction hash: ${txData.public.txHash} n/
-        block hash: ${txData.public.blockHash} n/
-        `);
+      await this.deployedContract.callTx.vote(candidate);
     } catch (error) {
-      console.error(error);
+      console.error({ error });
     }
   }
-
-  static getStateraLedgerState = async (
-    providers: VoteraContractProvider,
-    contractAddress: ContractAddress
-  ): Promise<Ledger | null> => {
-    const state = await providers.publicDataProvider
-      .queryContractState(contractAddress)
-      .then((contractState) =>
-        contractState != null ? ledger(contractState.data) : null
-      );
-    console.log({ state });
-
-    return state;
-  };
 }
 
 export * from "./common-types.js";

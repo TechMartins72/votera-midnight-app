@@ -6,10 +6,12 @@ import {
   map,
   of,
   take,
-  tap,
   throwError,
   timeout,
   catchError,
+  tap,
+  Observable,
+  BehaviorSubject,
 } from "rxjs";
 import { pipe as fnPipe } from "fp-ts/function";
 import {
@@ -37,15 +39,146 @@ import {
   getLedgerNetworkId,
   getZswapNetworkId,
 } from "@midnight-ntwrk/midnight-js-network-id";
-
-import { type WalletAndProvider } from "./common-types";
+import { type ContractAddress } from "@midnight-ntwrk/compact-runtime";
 import {
   VoteraPrivateStateKey,
   type VoteraCircuitKeys,
-} from "../../../../packages/votera-api/dist/common-types";
+  type VoteraContractProvider,
+} from "@repo/votera-api";
 import { VoteraAPI } from "@repo/votera-api";
 
-const connectWallet = async (): Promise<{
+export type status =
+  | "in-progress"
+  | "deployed"
+  | "failed-with-error"
+  | "no-action";
+
+export interface DeployedVoteraAPIProvider {
+  readonly resolve: (
+    contractAddress?: ContractAddress
+  ) => Promise<VoteraAPI | undefined>;
+  readonly status$: Observable<status>;
+}
+
+export class BrowserDeployedVoteraManager implements DeployedVoteraAPIProvider {
+  contractAddress: ContractAddress | null;
+  private statusSubject: BehaviorSubject<status>;
+  readonly status$: Observable<status>;
+
+  constructor() {
+    this.contractAddress = null;
+    this.statusSubject = new BehaviorSubject<status>("no-action");
+    this.status$ = this.statusSubject.asObservable();
+  }
+
+  async resolve(contractAddress?: ContractAddress) {
+    this.statusSubject.next("in-progress");
+
+    try {
+      let api;
+      if (contractAddress) {
+        api = await this.joinDeployment(contractAddress);
+      } else {
+        api = await this.deployDeployment();
+        if (api) {
+          this.contractAddress =
+            api?.deployedContract.deployTxData.public.contractAddress;
+        }
+      }
+
+      if (api) {
+        this.statusSubject.next("deployed");
+      } else {
+        this.statusSubject.next("failed-with-error");
+      }
+
+      return api;
+    } catch (error) {
+      this.statusSubject.next("failed-with-error");
+      console.log("Error at Resolve" + error);
+      return undefined;
+    }
+  }
+
+  private async deployDeployment(): Promise<VoteraAPI | undefined> {
+    let api;
+    try {
+      const providers = await initializeProviders();
+      api = await VoteraAPI.deployVoteraContract(providers);
+      return api;
+    } catch (error: unknown) {
+      console.log(error);
+    } finally {
+      return api;
+    }
+  }
+
+  private async joinDeployment(
+    contractAddress: ContractAddress
+  ): Promise<VoteraAPI | undefined> {
+    let api;
+    try {
+      const providers = await initializeProviders();
+      api = await VoteraAPI.join(providers, contractAddress);
+      return api;
+    } catch (error: unknown) {
+      console.log(error);
+    } finally {
+      return api;
+    }
+  }
+}
+
+const initializeProviders = async (): Promise<VoteraContractProvider> => {
+  const { wallet, uris } = await connectToWallet();
+  const walletState = await wallet.state();
+
+  return {
+    privateStateProvider: levelPrivateStateProvider({
+      privateStateStoreName: VoteraPrivateStateKey,
+    }),
+    zkConfigProvider: new FetchZkConfigProvider<VoteraCircuitKeys>(
+      window.location.origin,
+      fetch.bind(window)
+    ),
+    proofProvider: httpClientProofProvider(uris.proverServerUri),
+    publicDataProvider: indexerPublicDataProvider(
+      uris.indexerUri,
+      uris.indexerWsUri
+    ),
+    walletProvider: {
+      coinPublicKey: walletState.coinPublicKey,
+      encryptionPublicKey: walletState.encryptionPublicKey,
+      balanceTx(
+        tx: UnbalancedTransaction,
+        newCoins: CoinInfo[]
+      ): Promise<BalancedTransaction> {
+        return wallet
+          .balanceAndProveTransaction(
+            ZswapTransaction.deserialize(
+              tx.serialize(getLedgerNetworkId()),
+              getZswapNetworkId()
+            ),
+            newCoins
+          )
+          .then((zswapTx) =>
+            Transaction.deserialize(
+              zswapTx.serialize(getZswapNetworkId()),
+              getLedgerNetworkId()
+            )
+          )
+          .then(createBalancedTx);
+      },
+    },
+    midnightProvider: {
+      submitTx(tx: BalancedTransaction): Promise<TransactionId> {
+        return wallet.submitTransaction(tx);
+      },
+    },
+  };
+};
+
+const connectToWallet = (): Promise<{
   wallet: DAppConnectorWalletAPI;
   uris: ServiceUriConfig;
 }> => {
@@ -134,74 +267,9 @@ const connectWallet = async (): Promise<{
         console.info(
           "Connected to wallet connector API and retrieved service configuration"
         );
-        console.log("wallet connect");
+
         return { wallet: walletConnectorAPI, uris };
       })
     )
   );
-};
-
-export const initialWalletAndProviders =
-  async (): Promise<WalletAndProvider> => {
-    const { wallet, uris } = await connectWallet();
-    const walletState = await wallet.state();
-    const providers = {
-      privateStateProvider: levelPrivateStateProvider({
-        privateStateStoreName: VoteraPrivateStateKey,
-      }),
-      zkConfigProvider: new FetchZkConfigProvider<VoteraCircuitKeys>(
-        window.location.origin,
-        fetch.bind(window)
-      ),
-      proofProvider: httpClientProofProvider(uris.proverServerUri),
-      publicDataProvider: indexerPublicDataProvider(
-        uris.indexerUri,
-        uris.indexerWsUri
-      ),
-      walletProvider: {
-        coinPublicKey: walletState.coinPublicKey,
-        encryptionPublicKey: walletState.encryptionPublicKey,
-        balanceTx(
-          tx: UnbalancedTransaction,
-          newCoins: CoinInfo[]
-        ): Promise<BalancedTransaction> {
-          return wallet
-            .balanceAndProveTransaction(
-              ZswapTransaction.deserialize(
-                tx.serialize(getLedgerNetworkId()),
-                getZswapNetworkId()
-              ),
-              newCoins
-            )
-            .then((zswapTx) =>
-              Transaction.deserialize(
-                zswapTx.serialize(getZswapNetworkId()),
-                getLedgerNetworkId()
-              )
-            )
-            .then(createBalancedTx)
-            .finally(() => {
-              console.log("balanceTxDone");
-            });
-        },
-      },
-      midnightProvider: {
-        submitTx(tx: BalancedTransaction): Promise<TransactionId> {
-          return wallet.submitTransaction(tx);
-        },
-      },
-    };
-
-    console.log("providers initiated");
-    return { wallet, uris, providers };
-  };
-
-export const deployOrJoinContract = async () => {
-  const { providers } = await initialWalletAndProviders();
-  const deployedContract = await VoteraAPI.join(
-    providers,
-    "0200296d8e167dccd9c6365207bd4f65043bf0a92a80f4b5198ec974481a5ab139d8"
-  );
-  console.log({ deployedContract });
-  console.log("contract deployment block");
 };

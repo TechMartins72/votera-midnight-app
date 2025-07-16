@@ -7,3 +7,8 @@ export interface WalletAndProvider {
   readonly uris: ServiceUriConfig;
   readonly providers: VoteraContractProvider;
 }
+
+export type voters = {
+  name: string;
+  count: number;
+};

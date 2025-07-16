@@ -1,4 +1,4 @@
-import { type voters } from "./types";
+import { type voters } from "../logic/common-types";
 
 export const votersData: voters[] = [
   {
@@ -14,4 +14,3 @@ export const votersData: voters[] = [
     count: 0,
   },
 ];
-

@@ -24,6 +24,11 @@ export circuit vote(candidate: Opaque<"string">): [] {
     voters.insert(person);
 }
 
+export circuit receiveSupport(coin: CoinInfo): [] {
+    receive(disclose(coin));
+}
+
+
 export circuit public_key(sk: Bytes<32>, _instance: Bytes<32>): Bytes<32> {
     return persistentHash<Vector<3, Bytes<32>>>([pad(32, "votera:pk:"), _instance, sk]);
 }

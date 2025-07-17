@@ -1,18 +1,10 @@
 import { ContractAddress } from "@midnight-ntwrk/compact-runtime";
-import {
-  uint8ArrayToHex,
-  VoteraAPI,
-  VoteraContractProvider,
-} from "@repo/votera-api";
+import { toHex, uint8ArrayToHex } from "@repo/votera-api";
+import { Ledger } from "@repo/votera-contract";
 
-export const getPerson = async (
-  providers: VoteraContractProvider,
-  contractAddress: ContractAddress
-) => {
+export const getPerson = async (state: Ledger | undefined) => {
   try {
-    const personBuffer = (
-      await VoteraAPI.getVoteraLedgerState(providers, contractAddress)
-    )?.person;
+    const personBuffer = await state?.person;
     if (personBuffer) {
       const person = uint8ArrayToHex(personBuffer);
       console.log({ person });
@@ -37,4 +29,22 @@ export const getPerson = async (
       console.log("Unknown error type:", error);
     }
   }
+};
+
+export const convertHexToByte = (hex: string) => {
+  const bytes = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) {
+    bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return bytes;
+};
+
+export const getVotersList = (voters: {
+  isEmpty(): boolean;
+  size(): bigint;
+  member(elem_0: Uint8Array): boolean;
+  [Symbol.iterator](): Iterator<Uint8Array>;
+}) => {
+  const votersList = Array.from(voters).map((voter) => voter);
+  console.log(votersList);
 };

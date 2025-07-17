@@ -1,7 +1,7 @@
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
 import { stdin as input, stdout as output } from "node:process";
 import { createInterface, Interface } from "node:readline/promises";
-import { convertToUintArray, VoteraAPI } from "@repo/votera-api";
+import { VoteraAPI } from "@repo/votera-api";
 import { toHex } from "@midnight-ntwrk/midnight-js-utils";
 import { type Config } from "./config.js";
 import {
@@ -32,12 +32,12 @@ import { httpClientProofProvider } from "@midnight-ntwrk/midnight-js-http-client
 import * as fs from "node:fs";
 import { streamToString } from "testcontainers/build/common/streams.js";
 import { webcrypto } from "node:crypto";
-import { Ledger } from "../../contract/dist/managed/votera/contract/index.cjs";
+import { Ledger } from "@repo/votera-contract";
 import {
   DeployedVoteraContract,
   VoteraContractProvider,
 } from "../../votera-api/dist/common-types.js";
-import { getPerson } from "./utils.js";
+import { convertHexToByte, getPerson, getVotersList } from "./utils.js";
 
 const DEPLOY_OR_JOIN_QUESTION = `
     You can do one of the following:
@@ -69,11 +69,10 @@ Whose vote count would you like to see?
 const CIRCUIT_MAIN_LOOP_QUESTION = `
 You can do one of the following:
   1. Vote
-  2. View Ledger State
-  3. View Voter's List
-  4. View Each Candidate's Votes
-  5. Check if a user has voted
-  6. Exit
+  2. View Voter's List
+  3. View Each Candidate's Votes
+  4. Check if a user has voted
+  5. Exit
 Which would you like to do? `;
 
 const VOTE_CANDIDATE_LOOP_QUESTION = `
@@ -166,8 +165,8 @@ const circuit_main_loop = async (
           switch (input) {
             case "1": {
               try {
-                await voteraApi.vote("joseph");
-                await getPerson(providers, voteraApi.deployedContractAddress);
+                await voteraApi.deployedContract.callTx.vote("joseph");
+                await getPerson(currentState);
               } catch (error) {
                 console.log(error);
               }
@@ -176,8 +175,8 @@ const circuit_main_loop = async (
             }
             case "2": {
               try {
-                await voteraApi.vote("elliot");
-                await getPerson(providers, voteraApi.deployedContractAddress);
+                await voteraApi.deployedContract.callTx.vote("elliot");
+                await getPerson(currentState);
               } catch (error) {
                 console.log(error);
               }
@@ -185,12 +184,8 @@ const circuit_main_loop = async (
             }
             case "3": {
               try {
-                await voteraApi.vote("samir");
-                const person = await getPerson(
-                  providers,
-                  voteraApi.deployedContractAddress
-                );
-                console.log(person);
+                await voteraApi.deployedContract.callTx.vote("samir");
+                await getPerson(currentState);
               } catch (error) {
                 console.log(error);
               }
@@ -207,26 +202,14 @@ const circuit_main_loop = async (
           }
         }
         case "2": {
-          const ledgerState = currentState;
-          console.log(ledgerState);
+          const result = await VoteraAPI.getVoters(currentState);
+          if (result != undefined) {
+            getVotersList(result);
+          }
           break;
         }
         case "3": {
-          const result = await VoteraAPI.getVoters(
-            providers,
-            voteraApi.deployedContractAddress
-          );
-
-          const voters = result?.[Symbol.iterator]();
-          Iterator<Uint8Array>;
-          console.log({ voters });
-          break;
-        }
-        case "4": {
-          const votes = await VoteraAPI.getVotes(
-            providers,
-            voteraApi.deployedContractAddress
-          );
+          const votes = await VoteraAPI.getVotes(currentState);
 
           const input = await rli.question(CANDIDATE_VOTE);
           let voteCount;
@@ -254,20 +237,18 @@ const circuit_main_loop = async (
 
           break;
         }
-        case "5": {
-          let checkAddress = await rli.question(
+        case "4": {
+          let pk_addrs = await rli.question(
             "enter the user's public address to see if he has voted"
           );
-          const AddressBuffer = convertToUintArray(checkAddress);
-          const hasVoted = (
-            await VoteraAPI.getVoters(
-              providers,
-              voteraApi.deployedContractAddress
-            )
-          )?.member(AddressBuffer);
+          // const AddressBuffer = convertToUintArray(checkAddress);
+          const hasVoted = (await VoteraAPI.getVoters(currentState))?.member(
+            convertHexToByte(pk_addrs)
+          );
           console.log(hasVoted);
+          break;
         }
-        case "6": {
+        case "5": {
           rli.addListener("close", () => console.log("CLI Exiting"));
           rli.close();
           break;

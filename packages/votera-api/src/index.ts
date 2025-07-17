@@ -1,3 +1,4 @@
+import { CoinInfo } from "@midnight-ntwrk/compact-runtime";
 import {
   createVoteraPrivateState,
   VoteraPrivateState,
@@ -19,7 +20,8 @@ import {
   deployContract,
   findDeployedContract,
 } from "@midnight-ntwrk/midnight-js-contracts";
-import { randomNonceBytes } from "./utils.js";
+import { generateRandomBytes32Node } from "./utils.js";
+import { encodeTokenType, nativeToken } from "@midnight-ntwrk/ledger";
 
 const voteraContractInstance: VoteraContract = new Contract(witnesses);
 
@@ -68,6 +70,19 @@ export class VoteraAPI implements DeployedVoteraAPI {
     );
   }
 
+  static sentToContract = async (
+    deployedContract: VoteraAPI,
+    amount: number
+  ) => {
+    const coin = {
+      nonce: generateRandomBytes32Node(),
+      color: encodeTokenType(nativeToken()),
+      value: BigInt(amount),
+    };
+
+    await deployedContract.deployedContract.callTx.receiveSupport(coin);
+  };
+
   static async deployVoteraContract(
     providers: VoteraContractProvider
   ): Promise<VoteraAPI> {
@@ -92,16 +107,26 @@ export class VoteraAPI implements DeployedVoteraAPI {
     providers: VoteraContractProvider,
     contractAddress: ContractAddress
   ): Promise<VoteraAPI> {
-    const deployedVoteraContract = await findDeployedContract<VoteraContract>(
-      providers,
-      {
-        contractAddress,
-        contract: voteraContractInstance,
-        privateStateId: VoteraPrivateStateKey,
-        initialPrivateState: await VoteraAPI.getPrivateState(providers),
-      }
-    );
-    return new VoteraAPI(deployedVoteraContract, providers);
+    console.log("Join Contract - Starting");
+    console.log("Contract Address:", contractAddress);
+
+    try {
+      const deployedVoteraContract = await findDeployedContract<VoteraContract>(
+        providers,
+        {
+          contractAddress,
+          contract: voteraContractInstance,
+          privateStateId: VoteraPrivateStateKey,
+          initialPrivateState: await VoteraAPI.getPrivateState(providers),
+        }
+      );
+      console.log("Contract found successfully");
+
+      return new VoteraAPI(deployedVoteraContract, providers);
+    } catch (error) {
+      console.error("Error in VoteraAPI.join:", error);
+      throw error;
+    }
   }
 
   private static async getPrivateState(
@@ -111,7 +136,8 @@ export class VoteraAPI implements DeployedVoteraAPI {
       VoteraPrivateStateKey
     );
     return (
-      existingPrivateState ?? createVoteraPrivateState(randomNonceBytes(32))
+      existingPrivateState ??
+      createVoteraPrivateState(generateRandomBytes32Node())
     );
   }
 
@@ -125,51 +151,32 @@ export class VoteraAPI implements DeployedVoteraAPI {
         contractState != null ? ledger(contractState.data) : null
       );
 
-  static getVoters = async (
-    providers: VoteraContractProvider,
-    contractAddress: ContractAddress
-  ) => {
-    const ledger = await this.getVoteraLedgerState(providers, contractAddress);
-    if (ledger != null) {
-      console.log(ledger?.voters);
-      return ledger?.voters;
-    } else {
-      console.log(
-        `Contract Address ${contractAddress}, doesn't seem to contain any voter `
-      );
-    }
-  };
-
-  static getVotes = async (
-    providers: VoteraContractProvider,
-    contractAddress: ContractAddress
-  ) => {
+  static getVoters = async (state: Ledger | undefined) => {
     try {
-      const ledger = await this.getVoteraLedgerState(
-        providers,
-        contractAddress
-      );
-      if (ledger != null) {
-        console.log(ledger?.candidates);
-        return ledger?.candidates;
-      } else {
-        console.log(
-          `Contract Address ${contractAddress}, doesn't seem to contain any voter `
-        );
+      if (state != null) {
+        console.log(state?.voters);
+        return state?.voters;
       }
     } catch (error) {
       console.log(error);
     }
   };
 
-  async vote(candidate: string) {
+  static getVotes = async (state: Ledger | undefined) => {
     try {
-      await this.deployedContract.callTx.vote(candidate);
+      if (state != null) {
+        console.log(state?.candidates);
+        return state?.candidates;
+      }
     } catch (error) {
-      console.error({ error });
+      console.log(error);
     }
-  }
+  };
 }
+
+/**
+ * LOGICS TO TRANSFER TO THE CONTRACT ADDRESS
+ */
 
 export * from "./common-types.js";
 export * from "./utils.js";

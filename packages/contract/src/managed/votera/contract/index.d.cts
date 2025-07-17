@@ -6,6 +6,8 @@ export type Witnesses<T> = {
 
 export type ImpureCircuits<T> = {
   vote(context: __compactRuntime.CircuitContext<T>, candidate_0: string): __compactRuntime.CircuitResults<T, []>;
+  receiveSupport(context: __compactRuntime.CircuitContext<T>,
+                 coin_0: { nonce: Uint8Array, color: Uint8Array, value: bigint }): __compactRuntime.CircuitResults<T, []>;
 }
 
 export type PureCircuits = {
@@ -14,6 +16,8 @@ export type PureCircuits = {
 
 export type Circuits<T> = {
   vote(context: __compactRuntime.CircuitContext<T>, candidate_0: string): __compactRuntime.CircuitResults<T, []>;
+  receiveSupport(context: __compactRuntime.CircuitContext<T>,
+                 coin_0: { nonce: Uint8Array, color: Uint8Array, value: bigint }): __compactRuntime.CircuitResults<T, []>;
   public_key(context: __compactRuntime.CircuitContext<T>,
              sk_0: Uint8Array,
              _instance_0: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;

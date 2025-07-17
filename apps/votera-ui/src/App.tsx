@@ -52,17 +52,23 @@ function App() {
         setVoteraDeployedApi(api);
         setContractAddress(api?.deployedContractAddress);
       }
-
-      console.log({ contractAddress });
     } catch (error) {
       console.log("failed to deploy at handle deployment" + error);
     }
   };
 
+  useEffect(() => {
+    console.log({ contractAddress });
+  }, [contractAddress]);
+
   return (
     <>
       <div>
-        <Header handleDeployment={handleDeployment} status={status} />
+        <Header
+          handleDeployment={handleDeployment}
+          status={status}
+          api={voteraDeployedApi}
+        />
         {!voteraDeployedApi ? (
           <div>Please Click connect button to join or deploy contract</div>
         ) : (

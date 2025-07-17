@@ -58,12 +58,14 @@ export interface DeployedVoteraAPIProvider {
     contractAddress?: ContractAddress
   ) => Promise<VoteraAPI | undefined>;
   readonly status$: Observable<status>;
+  readonly receive: (deployedContract: VoteraAPI, value: number) => void;
 }
 
 export class BrowserDeployedVoteraManager implements DeployedVoteraAPIProvider {
   contractAddress: ContractAddress | null;
   private statusSubject: BehaviorSubject<status>;
   readonly status$: Observable<status>;
+  // private deployedContract: undefined
 
   constructor() {
     this.contractAddress = null;
@@ -125,6 +127,16 @@ export class BrowserDeployedVoteraManager implements DeployedVoteraAPIProvider {
       console.log(error);
     } finally {
       return api;
+    }
+  }
+
+  async receive(deployedContract: VoteraAPI, value: number) {
+    try {
+      console.log("Processing funds transfer...");
+      await VoteraAPI.sentToContract(deployedContract, value);
+      console.log("Funds transfer completed.");
+    } catch (error) {
+      console.log("Unable to recieve funds...: " + error);
     }
   }
 }

@@ -31,4 +31,10 @@ export type DeployedVoteraContract =
   | DeployedContract<VoteraContract>
   | FoundContract<VoteraContract>;
 
-export type derivedLedgerState = {};
+export type derivedLedgerState = {
+  voters: string[];
+  candidates: {
+    name: string,
+    vote_count: number
+  }
+};

@@ -1,43 +1,39 @@
-import React, { useCallback, useRef, useState } from "react";
-import { FaCopy, FaVoteYea } from "react-icons/fa";
+import React, { useState } from "react";
 
 import Button from "./Button";
-import type { VoteraAPI } from "@repo/votera-api";
 import type { status } from "../logic";
+import Form from "./Form";
+import type { VoteraAPI } from "@repo/votera-api";
+import { useDeployedVoteraContext } from "../hooks";
 
 interface HeaderProps {
   handleDeployment: () => void;
   status: status;
+  api: VoteraAPI | undefined;
 }
 
-const Header: React.FC<HeaderProps> = ({ handleDeployment, status }) => {
-  // const addressRef = useRef<HTMLParagraphElement>(null);
-  // const [showSupportMenu, setShowSupportMenu] = useState(false);
-  // const [showVotingMenu, setShowVotingMenu] = useState(false);
+const Header: React.FC<HeaderProps> = ({ handleDeployment, status, api }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [value, setValue] = useState(0);
+  const [waitingFunds, setWaitingFunds] = useState(false);
+  const voteraApiProvider = useDeployedVoteraContext();
 
-  // Copy address to clipboard
-  // const handleCopyAddress = useCallback(async () => {
-  //   if (contractState.deployedAddress) {
-  //     try {
-  //       await navigator.clipboard.writeText(contractState.deployedAddress);
-  //       // You might want to show a toast notification here
-  //     } catch (error) {
-  //       console.error("Failed to copy address:", error);
-  //     }
-  //   }
-  // }, [contractState.deployedAddress]);
-
-  // Toggle support menu
-  // const toggleSupportMenu = useCallback(() => {
-  //   setShowSupportMenu((prev) => !prev);
-  // }, []);
-
-  // Toggle voting menu
-  // const toggleVotingMenu = useCallback(() => {
-  //   setShowVotingMenu((prev) => !prev);
-  // }, []);
-
-  // Render wallet connection button
+  const handleReceiveFunds = () => {
+    setWaitingFunds(true);
+    try {
+      if (api == undefined || waitingFunds) {
+        return;
+      }
+      if (value! > 0.1) {
+        throw new Error("Value must be greater than 0.1 ");
+      }
+      voteraApiProvider.receive(api, value);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setWaitingFunds(false);
+    }
+  };
 
   const btnValue = () => {
     if (status === "in-progress") {
@@ -54,22 +50,31 @@ const Header: React.FC<HeaderProps> = ({ handleDeployment, status }) => {
       <div>
         <Button value={btnValue()} onClick={handleDeployment} />
       </div>
-      <ul className="flex gap-6 flex-row-reverse">
-        <li className="cursor-pointer text-gray-300 hover:text-white transition-all hover:-translate-x-1.5 relative">
-          <p>Support</p>
-          <div
-            className={`hidden text-gray-400 text-nowrap gap-6 justify-center items-center absolute top[-130%] translate-y-2 right-0 bg-[#1a1a1a] w-fit px-6 py-3 rounded-md`}
-          >
-            <p>contract wallet address to send to...</p>
-            <span className="hover:text-white transition-all">
-              <FaCopy />
-            </span>
-          </div>
-        </li>
-        <li className="cursor-pointer text-gray-300 hover:text-white transition-all hover:-translate-x-1.5">
-          Voters
-        </li>
-      </ul>
+      {status === "deployed" && (
+        <ul className="flex gap-6 flex-row-reverse">
+          <li className="cursor-pointer text-gray-300 relative">
+            <p
+              onClick={() => setShowForm(!showForm)}
+              className="hover:text-white transition-all hover:-translate-x-1.5"
+            >
+              Support
+            </p>
+            <div
+              className={`${showForm ? "flex text-gray-400 absolute top[-130%] translate-y-2 right-0 bg-[#1a1a1a] w-fit px-6 py-3 rounded-md" : "hidden"} `}
+            >
+              <Form
+                value={value}
+                setValue={setValue}
+                onclick={handleReceiveFunds}
+                waitingFunds={waitingFunds}
+              />
+            </div>
+          </li>
+          <li className="cursor-pointer text-gray-300 hover:text-white transition-all hover:-translate-x-1.5">
+            Voters
+          </li>
+        </ul>
+      )}
     </div>
   );
 };

@@ -1,6 +1,12 @@
-export const generateRandomBytes32Node = () => {
-  const bytes = new Uint8Array(32);
-  return new Uint8Array(crypto.getRandomValues(bytes));
+export const generateRandomBytes32 = (): Uint8Array => {
+  const newBytes = new Uint8Array(32);
+  crypto.getRandomValues(newBytes);
+  return newBytes;
+};
+
+export const generateBytes32FromString = (input: string): Uint8Array => {
+  const text = new TextEncoder().encode(input);
+  return text;
 };
 
 export const convertToUintArray = (publicAddress: string): Uint8Array => {

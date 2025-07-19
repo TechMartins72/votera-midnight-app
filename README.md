@@ -1,14 +1,24 @@
 # SEED
 
-7c22a3127942603b0aa4d816dd59bd3c9912d8aecb82c78b744044b0b3191f04
+a3a9170fe532c3724c979121324e74dbf3e004af8ab59a1517573cb2aa90ff9a
+
 
 # CONTRACT ADDRESS
 
-02001f935f35350b785aef56197760c8a02c9a6eb7a1c8ba349af695302dcf22367e
+0200b27507292ca00a6f5d1bddba017f782b19213cce6e18a51687d55a5d3bebde70
 
 # SEED2
 
-a3a9170fe532c3724c979121324e74dbf3e004af8ab59a1517573cb2aa90ff9a
+7c22a3127942603b0aa4d816dd59bd3c9912d8aecb82c78b744044b0b3191f04
+
+
+# APP DESCRIPTION
+Users can create a vote session with their preferred choice of candidates1
+
+They can withdraw the support funds to their own wallet
+They can end their vote, pause vote and restart vote
+They can see all created vote and participate in any
+
 
 # USER PK_ADDRS
 

@@ -6,7 +6,7 @@ export ledger voters: Set<Bytes<32>>;
 export ledger instance: Counter;
 export ledger candidates: Map<Opaque<"string">, Counter>;
 export ledger person: Bytes<32>;
-
+export ledger totalTokenReceived: QualifiedCoinInfo;
 
 constructor(name1: Opaque<"string">, name2: Opaque<"string">, name3: Opaque<"string">) {
     candidates.insert(disclose(name1), default<Counter>);
@@ -25,10 +25,18 @@ export circuit vote(candidate: Opaque<"string">): [] {
 }
 
 export circuit receiveSupport(coin: CoinInfo): [] {
-    receive(disclose(coin));
+    assert (coin.value > 0, "Amount must be greater than 0");
+    const disclosedCoin = disclose(coin);
+    receive(disclosedCoin);
+    totalTokenReceived.writeCoin(disclosedCoin, right<ZswapCoinPublicKey, ContractAddress>(kernel.self()));
 }
-
 
 export circuit public_key(sk: Bytes<32>, _instance: Bytes<32>): Bytes<32> {
     return persistentHash<Vector<3, Bytes<32>>>([pad(32, "votera:pk:"), _instance, sk]);
+}
+
+export circuit sendCoinToRecipient(amount: Uint<128>): SendResult {
+    assert(amount <= totalTokenReceived.value, "You can't withdraw beyound contract balance");
+    const sendResult = send(totalTokenReceived, left<ZswapCoinPublicKey, ContractAddress>(ownPublicKey()), disclose(amount));
+    return sendResult;
 }

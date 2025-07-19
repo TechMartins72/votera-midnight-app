@@ -20,7 +20,7 @@ import {
   deployContract,
   findDeployedContract,
 } from "@midnight-ntwrk/midnight-js-contracts";
-import { generateRandomBytes32Node } from "./utils.js";
+import { generateRandomBytes32 } from "./utils.js";
 import { encodeTokenType, nativeToken } from "@midnight-ntwrk/ledger";
 
 const voteraContractInstance: VoteraContract = new Contract(witnesses);
@@ -65,6 +65,7 @@ export class VoteraAPI implements DeployedVoteraAPI {
           person: hashedPublicKey,
           voters: ledgerState.voters,
           candidates: ledgerState.candidates,
+          totalTokenReceived: ledgerState.totalTokenReceived,
         };
       }
     );
@@ -75,7 +76,7 @@ export class VoteraAPI implements DeployedVoteraAPI {
     amount: number
   ) => {
     const coin = {
-      nonce: generateRandomBytes32Node(),
+      nonce: generateRandomBytes32(),
       color: encodeTokenType(nativeToken()),
       value: BigInt(amount),
     };
@@ -136,8 +137,7 @@ export class VoteraAPI implements DeployedVoteraAPI {
       VoteraPrivateStateKey
     );
     return (
-      existingPrivateState ??
-      createVoteraPrivateState(generateRandomBytes32Node())
+      existingPrivateState ?? createVoteraPrivateState(generateRandomBytes32())
     );
   }
 

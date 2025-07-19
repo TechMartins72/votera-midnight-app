@@ -1,9 +1,7 @@
-import Button from "./Button";
-
 interface FormProps {
-  onclick: () => void; // Fixed: form submit handler needs event parameter
+  onclick: () => void;
   value: number;
-  setValue: (value: number) => void; // Fixed: added type annotation
+  setValue: (value: number) => void;
   waitingFunds: boolean;
 }
 
@@ -14,20 +12,21 @@ const Form: React.FC<FormProps> = ({
   waitingFunds,
 }) => {
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Fixed: missing closing >
     const value = e.target.value;
-    setValue(Number(value)); // Fixed: convert string to number
+    setValue(Number(value));
   };
 
   return (
-    <form
-      onSubmit={onclick}
-      className="w-full flex flex-col items-center gap-4"
-    >
-      <label htmlFor="amount">Amount to send:</label>
+    <form onSubmit={onclick} className="w-full flex flex-col gap-4">
+      <div className="w-full flex justify-between">
+        <label htmlFor="amount">Amount to send:</label>
+        <span>
+          <p className="text-sm text-gray-400">tDUST: {" " + 1}</p>
+        </span>
+      </div>
       <input
-        type="number"
-        onChange={(e) => handleInput(e)} // Fixed: use onChange instead of onInput
+        type="text"
+        onChange={(e) => handleInput(e)}
         id="amount"
         value={value}
         placeholder="Enter amount"
@@ -35,11 +34,20 @@ const Form: React.FC<FormProps> = ({
         step="0.1"
         className="outline-none rounded-xl border-[1px] px-4 py-2 text-white"
       />
-      <Button
-        value={!waitingFunds ? "Send to Contract" : "Getting funds..."}
+      <button
         onClick={onclick}
         disabled={waitingFunds}
-      />
+        className="!bg-[#646cffaa] !outline text-white transition-all cursor-pointer w-full"
+      >
+        {!waitingFunds ? "Send to Contract" : "Receiving funds..."}
+      </button>
+      <button
+        onClick={onclick}
+        disabled={waitingFunds}
+        className="!bg-[#646cffaa] !outline text-white transition-all cursor-pointer w-full"
+      >
+        {!waitingFunds ? "Collect Funds" : "Collecting funds..."}
+      </button>
     </form>
   );
 };

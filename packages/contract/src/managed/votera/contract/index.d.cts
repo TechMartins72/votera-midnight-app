@@ -8,6 +8,18 @@ export type ImpureCircuits<T> = {
   vote(context: __compactRuntime.CircuitContext<T>, candidate_0: string): __compactRuntime.CircuitResults<T, []>;
   receiveSupport(context: __compactRuntime.CircuitContext<T>,
                  coin_0: { nonce: Uint8Array, color: Uint8Array, value: bigint }): __compactRuntime.CircuitResults<T, []>;
+  sendCoinToRecipient(context: __compactRuntime.CircuitContext<T>,
+                      amount_0: bigint): __compactRuntime.CircuitResults<T, { change: { is_some: boolean,
+                                                                                        value: { nonce: Uint8Array,
+                                                                                                 color: Uint8Array,
+                                                                                                 value: bigint
+                                                                                               }
+                                                                                      },
+                                                                              sent: { nonce: Uint8Array,
+                                                                                      color: Uint8Array,
+                                                                                      value: bigint
+                                                                                    }
+                                                                            }>;
 }
 
 export type PureCircuits = {
@@ -21,6 +33,18 @@ export type Circuits<T> = {
   public_key(context: __compactRuntime.CircuitContext<T>,
              sk_0: Uint8Array,
              _instance_0: Uint8Array): __compactRuntime.CircuitResults<T, Uint8Array>;
+  sendCoinToRecipient(context: __compactRuntime.CircuitContext<T>,
+                      amount_0: bigint): __compactRuntime.CircuitResults<T, { change: { is_some: boolean,
+                                                                                        value: { nonce: Uint8Array,
+                                                                                                 color: Uint8Array,
+                                                                                                 value: bigint
+                                                                                               }
+                                                                                      },
+                                                                              sent: { nonce: Uint8Array,
+                                                                                      color: Uint8Array,
+                                                                                      value: bigint
+                                                                                    }
+                                                                            }>;
 }
 
 export type Ledger = {
@@ -38,6 +62,11 @@ export type Ledger = {
     lookup(key_0: string): { read(): bigint }
   };
   readonly person: Uint8Array;
+  readonly totalTokenReceived: { nonce: Uint8Array,
+                                 color: Uint8Array,
+                                 value: bigint,
+                                 mt_index: bigint
+                               };
 }
 
 export type ContractReferenceLocations = any;

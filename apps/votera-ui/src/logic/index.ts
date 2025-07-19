@@ -279,7 +279,6 @@ const connectToWallet = (): Promise<{
         console.info(
           "Connected to wallet connector API and retrieved service configuration"
         );
-
         return { wallet: walletConnectorAPI, uris };
       })
     )

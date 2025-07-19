@@ -1,7 +1,7 @@
 import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-private-state-provider";
 import { stdin as input, stdout as output } from "node:process";
 import { createInterface, Interface } from "node:readline/promises";
-import { VoteraAPI } from "@repo/votera-api";
+import { generateBytes32FromString, VoteraAPI } from "@repo/votera-api";
 import { toHex } from "@midnight-ntwrk/midnight-js-utils";
 import { type Config } from "./config.js";
 import {
@@ -72,7 +72,10 @@ You can do one of the following:
   2. View Voter's List
   3. View Each Candidate's Votes
   4. Check if a user has voted
-  5. Exit
+  5. Support Vote
+  6. Receive Support
+  7. Check Contract Balance
+  8. Exit
 Which would you like to do? `;
 
 const VOTE_CANDIDATE_LOOP_QUESTION = `
@@ -82,6 +85,8 @@ You can vote for either of the following:
   3. Samir Samir
   4. Exit
 Who would you like to vote for? `;
+
+let coinPublicKey: string;
 
 const resolve = async (
   providers: VoteraContractProvider,
@@ -248,7 +253,62 @@ const circuit_main_loop = async (
           console.log(hasVoted);
           break;
         }
+
         case "5": {
+          try {
+            const amount = await rli.question(
+              "How much would you like to support with? "
+            );
+            console.log("Depositing...please wait");
+            await VoteraAPI.sentToContract(voteraApi, Number(amount));
+            console.log("Deposit succesfully");
+          } catch (error) {
+            console.log("An error occured. Please try again" + error);
+          }
+          break;
+        }
+        case "6": {
+          try {
+            const amount = await rli.question(
+              "How much would you like to withdraw? "
+            );
+
+            const totalAmount = (
+              await VoteraAPI.getVoteraLedgerState(
+                providers,
+                voteraApi.deployedContractAddress
+              )
+            )?.totalTokenReceived.value;
+
+            if (totalAmount) {
+              if (Number(totalAmount) >= Number(amount)) {
+                await voteraApi.deployedContract.callTx.sendCoinToRecipient(
+                  BigInt(totalAmount)
+                );
+                await waitForWalletSyncAfterOperation(wallet, 4000);
+                console.log(totalAmount);
+              } else {
+                console.log("Amount can't be much than the total amount!");
+              }
+            }
+            break;
+          } catch (error) {
+            console.log("An error occured. Please try again" + error);
+          }
+          break;
+        }
+        case "7": {
+          const totalAmount = (
+            await VoteraAPI.getVoteraLedgerState(
+              providers,
+              voteraApi.deployedContractAddress
+            )
+          )?.totalTokenReceived.value;
+
+          console.log(totalAmount);
+          break;
+        }
+        case "8": {
           rli.addListener("close", () => console.log("CLI Exiting"));
           rli.close();
           break;
@@ -447,6 +507,7 @@ export const buildEnhancedWalletAndWaitForFunds = async (
   // Store subscription reference for cleanup
   (wallet as any).__stateSubscription = stateSubscription;
 
+  wallet.state().subscribe((state) => (coinPublicKey = state.coinPublicKey));
   return wallet;
 };
 

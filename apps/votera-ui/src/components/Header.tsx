@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({ handleDeployment, status, api }) => {
       if (api == undefined || waitingFunds) {
         return;
       }
-      if (value! > 0.1) {
+      if (value < 0.1) {
         throw new Error("Value must be greater than 0.1 ");
       }
       voteraApiProvider.receive(api, value);
